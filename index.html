@@ -654,17 +654,7 @@ const DEFAULT_DATA = {
   nextId:9, nextBId:11, nextSId:5,
   // storage[storageNum][vehicleType] = [{id, name, qty, unit, notes}]
   storage:{
-    1:{
-      'مراب':[
-        {id:'p1',name:'فلتر هواء',qty:5,unit:'قطعة',notes:''},
-        {id:'p2',name:'زيت محرك',qty:12,unit:'لتر',notes:''},
-        {id:'p3',name:'بطارية',qty:2,unit:'قطعة',notes:''},
-      ],
-      'مدرعة':[
-        {id:'p4',name:'حزام جنزير',qty:3,unit:'قطعة',notes:''},
-        {id:'p5',name:'مضخة وقود',qty:1,unit:'قطعة',notes:''},
-      ],
-    },
+    1:{},
     2:{},
   },
   nextPartId:10,
@@ -741,6 +731,20 @@ function applyState(state){
   // ensure both storage slots exist
   if(!storageData[1]) storageData[1]={};
   if(!storageData[2]) storageData[2]={};
+  // ── MIGRATION: strip old demo parts (p1–p7) seeded in early versions ──
+  const DEMO_IDS=new Set(['p1','p2','p3','p4','p5','p6','p7']);
+  [1,2].forEach(num=>{
+    Object.keys(storageData[num]).forEach(type=>{
+      const after=storageData[num][type].filter(p=>!DEMO_IDS.has(p.id));
+      if(after.length===0) delete storageData[num][type];
+      else storageData[num][type]=after;
+    });
+  });
+  // clean storage2: remove any non-MRAP vehicle type keys (legacy data)
+  const MRAP_TYPES=['RG 33 Plus','RG 33','Caiman','Caiman Plus','MRV'];
+  const hadLegacy=Object.keys(storageData[2]).some(k=>!MRAP_TYPES.includes(k));
+  Object.keys(storageData[2]).forEach(k=>{ if(!MRAP_TYPES.includes(k)) delete storageData[2][k]; });
+  if(hadLegacy) saveShared();
 }
 
 function setSyncBadge(type,customText){
